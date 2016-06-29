@@ -1,0 +1,4 @@
+#!/bin/bash
+echo Please, Enter a URL
+read URL
+youtube-dl --prefer-free-formats $URL
