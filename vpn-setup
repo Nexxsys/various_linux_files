@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo openvpn --config '/home/tlohnes/Documents/VPN Keys/my_expressvpn_usa_-_denver_udp.ovpn'
