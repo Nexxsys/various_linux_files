@@ -1,0 +1,151 @@
+# My Arch Linux Installation Notes - Nexxsys
+fdisk -l
+fdisk /dev/sda
+p
+o
+n
+p
+1
++2G # for 2 GB of SWAP Space
+t
+82 # Linux Swap / Solaris File Type
+n
+p
+2
+default # accept default first and last sector values
+a
+w # writes out the changes
+mkswap /dev/sda1
+swapon /dev/sda1
+mkfs.ext 4 /dev/sda2
+mount /dev/sda2 /mnt
+mkdir /mnt/boot
+mkdir /mnt/home
+ip link # get your ethernet adapter name
+systemctl enable dhcpcd@<name>   # i.e. systemctl enable dhcpcd@eth4s0
+
+# Install Base Systems
+pacstrap /mnt base base-devel
+
+# chroot into the mnt
+arch-chroot /mnt
+
+# Generate fstab file
+genfstab -p /mnt >> /mnt/etc/fstab
+
+# Add Hostname
+echo archbase > /etc/hostname
+
+# General Time Zone, Locale, etc
+cp /usr/share/zoneinfo/America/Edmonton /etc/localtime
+hwclock --systohc --utc
+locale-gen
+mkinitcpio -p linux
+
+# Initramfs
+# When making configuration changes to mkinitcpio.conf, 
+# create a new initial RAM disk with:
+mkinitcpio -p linux
+
+# Make Root Password
+passwd
+
+# Boot Loader Install
+pacman -S grub
+grub-install /dev/sda
+
+# Make the configuration file
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Exit Unmount everything and reboot
+exit
+umount -R /mnt
+reboot
+
+# Login
+# Connect to the Internet
+systemctl enable dhcpcd
+reboot
+
+# Refresh Keys and Optimize
+pacman-optimize && pacman-key --init && pacman-key --populate archlinux
+
+# Get Mirror List for Packages
+# Install wget package first
+pacman -S wget
+wget -O /etc/pacman.d/mirrorlist https://www.archlinux.org/mirrorlist/all/
+cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+
+# Uncomment Mirror addresses (i.e. Canada, Worldwide, United States)
+nano /etc/pacman.d/mirrorlist.backup
+
+# Rank those mirrors based on speed - Note, this will take some time!
+rankmirrors /etc/pacman.d/mirrorlist.backup > /etc/pacman.d/mirrorlist
+
+# Add user
+useradd -m -g users -G adm,lp,wheel,power,audio,video,storage -s /bin/bash troy
+passwd troy
+
+EDITOR=nano visudo
+uncomment %wheel (choose one)
+
+# Edit pacman.conf
+# Uncomment out Color and add ILoveCandy at the bottom of that list
+# Uncomment out [multilib] source
+# At the bottom of this file add the following:
+[archlinuxfr]
+ SigLevel = Never
+ Server = http://repo.archlinux.fr/$arch
+
+# Update Pacman
+pacman -Sy
+
+# Install yaourt
+pacman -Sy yaourt gcc
+
+# Install your Video Drivers (non-VBOX installs)
+# Open Source
+# Nvidia ##
+sudo pacman -S xf86-video-nouveau mesa-libgl lib32-mesa-libgl
+
+# AMD: ##
+sudo pacman -S xf86-video-ati mesa-libgl lib32-mesa-libgl
+
+# Intel ##
+sudo pacman -S xf86-video-intel lib32-mesa-libgl
+
+# Install XORG
+sudo pacman -S --noconfirm -needed xorg xorg-server xorg-server-utils xorg-apps xorg-xinit xorg-twm xorg-xclock xterm
+
+# Now Install you Desktop Environment
+# Example XFCE
+sudo pacman -S --noconfirm --needed xfce4 xfce4-goodies xfce4-whiskermenu-plugin
+yaourt -S --noconfirm --neded menulibre
+
+touch ~/.xinitrc
+echo exec startxfce4 > ~/.xinitrc
+
+# Install Browsers
+sudo pacman -S firefox chromium jdk8-openjdk flashplugin icedtea-web
+
+# Install Sound
+sudo pacman -S --noconfirm alsa-utils lib32-alsa-lib lib32-alsa-plugins lib32-libpulse lib32-openal pulseaudio-alsa pulseaudio libpulse
+sudo pacman -S --noconfirm gstreamer gst-libav gst-plugins-bad gst-plugins-base gst-plugins-base-libs gst-plugins-good
+
+# OPTIONAL - Fonts
+sudo pacman -S ttf-dejavu ttf-liberation adobe-source-han-sans-otc-fonts ttf-freefont ttf-arphic-uming ttf-baekmuk ttf-droid ; yaourt ttf-ms-fonts ttf-vista-fonts terminus-font
+
+#####################################################
+# FOR VIRTUALBOX Arch Installations ONLY
+# VBox with Arch Linux as a Guest
+pacman -S --noconfirm virtualbox-guest-utils virtualbox-guest-dkms linux-lts-headers
+
+# now run
+modprobe -a vboxguest vboxsf 
+
+# now run
+# VBoxClient --clipboard --draganddrop --seamless --display --checkhostversion
+# As a shortcut, the VBoxClient-all bash script enables all of these features. 
+VBoxClient-all
+#####################################################
+
