@@ -1,0 +1,1 @@
+sudo sed -i '/export SAL_USE_VCLPLUGIN=gtk$/s/^#//g' /etc/profile.d/libreoffice-still.sh
